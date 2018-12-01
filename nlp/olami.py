@@ -31,7 +31,8 @@ class Olami:
         if response_json['status'] != 'ok':
             raise NliStatusError("NLI responded status != 'ok': {}".format(response_json['status']))
         else:
-            return response_json['data']['nli'][0]['desc_obj']['result']
+            nli_obj = response_json['data']['nli'][0]
+            return self.intent_detection(nli_obj)
 
     def _gen_parameters(self, api, text, cusid):
         timestamp_ms = (int(time.time() * 1000))
@@ -52,3 +53,39 @@ class Olami:
     def _gen_rq(self, text):
         obj = {'data_type': 'stt', 'data': {'input_type': self.input_type, 'text': text}}
         return json.dumps(obj)
+
+    def intent_detection(self, nli_obj):
+        def handle_selection_type(type):
+            if type == 'news':
+                return desc['result'] + '\n\n' + '\n'.join(
+                    str(index + 1) + '. ' + el['title'] for index, el in enumerate(data))
+            elif type == 'poem':
+                return desc['result'] + '\n\n' + '\n'.join(
+                    str(index + 1) + '. ' + el['poem_name'] + '，作者：' + el['author'] for index, el in enumerate(data))
+            elif type == 'cooking':
+                return desc['result'] + '\n\n' + '\n'.join(
+                    str(index + 1) + '. ' + el['name'] for index, el in enumerate(data))
+            else:
+                return '對不起，你說的我還不懂，能換個說法嗎？'
+
+        type = nli_obj['type']
+        desc = nli_obj['desc_obj']
+        data = nli_obj.get('data_obj', [])
+
+        if type == 'kkbox':
+            id = data[0]['id']
+            return ('https://widget.kkbox.com/v1/?type=song&id=' + id) if len(data) > 0 else desc['result']
+        elif type == 'news':
+            return data[0]['detail']
+        elif type == 'baike':
+            return data[0]['description']
+        elif type == 'joke':
+            return data[0]['content']
+        elif type == 'cooking':
+            return data[0]['content']
+        elif type == 'selection':
+            return handle_selection_type(desc['type'])
+        elif type == 'ds':
+            return desc['result'] + '\n請用 /help 指令看看我能怎麼幫助您'
+        else:
+            return desc['result']
