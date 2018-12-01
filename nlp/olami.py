@@ -3,6 +3,7 @@ import json
 import logging
 import time
 from hashlib import md5
+from api.kkbox import KKBOX
 
 import requests
 
@@ -68,6 +69,17 @@ class Olami:
             else:
                 return '對不起，你說的我還不懂，能換個說法嗎？'
 
+        def handle_music_kkbox_type(semantic):
+            music_type = semantic['modifier'][0].split('_')[2]
+            slots = semantic['slots']
+            kkbox = KKBOX()
+
+            def get_slot_value_by_key(key):
+                return next(filter(lambda el: el['name'] == key, slots))['value']
+
+            key = 'keyword' if music_type == 'playlist' else (music_type + '_name')
+            return kkbox.search(music_type, get_slot_value_by_key(key))
+
         type = nli_obj['type']
         desc = nli_obj['desc_obj']
         data = nli_obj.get('data_obj', [])
@@ -75,17 +87,19 @@ class Olami:
         if type == 'kkbox':
             id = data[0]['id']
             return ('https://widget.kkbox.com/v1/?type=song&id=' + id) if len(data) > 0 else desc['result']
-        elif type == 'news':
-            return data[0]['detail']
         elif type == 'baike':
             return data[0]['description']
         elif type == 'joke':
             return data[0]['content']
+        elif type == 'news':
+            return data[0]['detail']
         elif type == 'cooking':
             return data[0]['content']
         elif type == 'selection':
             return handle_selection_type(desc['type'])
         elif type == 'ds':
             return desc['result'] + '\n請用 /help 指令看看我能怎麼幫助您'
+        elif type == 'music_kkbox':
+            return handle_music_kkbox_type(nli_obj['semantic'][0])
         else:
             return desc['result']
