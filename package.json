@@ -1,0 +1,12 @@
+{
+  "name": "py-telegram-bot",
+  "version": "1.0.0",
+  "main": "main.py",
+  "repository": "git@github.com:taichunmin/py-telegram-bot-20181201.git",
+  "author": "taichunmin <taichunmin@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "start": "pipenv run python3 main.py",
+    "ngrok": "ngrok http 5000"
+  }
+}
